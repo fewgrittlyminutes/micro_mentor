@@ -1,0 +1,127 @@
+{
+  "project_info": {
+    "project_number": "437328648468",
+    "firebase_url": "https://micromentor-946f9-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "micromentor-946f9",
+    "storage_bucket": "micromentor-946f9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:437328648468:android:61424c95d47edd3a4a8a01",
+        "android_client_info": {
+          "package_name": "com.example.micro_mentor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "437328648468-g7e5h2a86aja15vqo4tven8r4ejh9pt6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.micro_mentor",
+            "certificate_hash": "d2377ae92d515b7323fa9c165061d6e8cb4c01aa"
+          }
+        },
+        {
+          "client_id": "437328648468-28i8j5aq319a2n4hfkb1e8hvuv3gq5m0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyx9WhSYBNvXiWwt_uFjgb_yEeum7vZD8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "437328648468-28i8j5aq319a2n4hfkb1e8hvuv3gq5m0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "437328648468-f4qacoh1s4o86c39fn8g1r2n3luav6s1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.microMentor"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:437328648468:android:43c0d178d5c6a0034a8a01",
+        "android_client_info": {
+          "package_name": "com.example.micromentor_nsbm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "437328648468-28i8j5aq319a2n4hfkb1e8hvuv3gq5m0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyx9WhSYBNvXiWwt_uFjgb_yEeum7vZD8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "437328648468-28i8j5aq319a2n4hfkb1e8hvuv3gq5m0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "437328648468-f4qacoh1s4o86c39fn8g1r2n3luav6s1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.microMentor"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:437328648468:android:aeb141eb1e6006fa4a8a01",
+        "android_client_info": {
+          "package_name": "com.example.mm_v2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "437328648468-28i8j5aq319a2n4hfkb1e8hvuv3gq5m0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyx9WhSYBNvXiWwt_uFjgb_yEeum7vZD8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "437328648468-28i8j5aq319a2n4hfkb1e8hvuv3gq5m0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "437328648468-f4qacoh1s4o86c39fn8g1r2n3luav6s1.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.microMentor"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
