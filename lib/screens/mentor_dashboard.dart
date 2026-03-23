@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-=======
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'edit_profile_screen.dart';
->>>>>>> 9facca9 (Ishini - Profile & Auth Actions)
+import 'notifications_screen.dart';
 
 class MentorDashboard extends StatelessWidget {
   const MentorDashboard({super.key});
-
+  
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Mentor Tools"),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF006837),
-        elevation: 0,
-<<<<<<< HEAD
-=======
         actions: [
+          _buildNotificationIcon(user?.email),
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
             onPressed: () {
@@ -35,7 +32,6 @@ class MentorDashboard extends StatelessWidget {
             icon: const Icon(Icons.logout),
           )
         ],
->>>>>>> 9facca9 (Ishini - Profile & Auth Actions)
       ),
       body: const Center(
         child: Column(
@@ -56,6 +52,40 @@ class MentorDashboard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+  
+  Widget _buildNotificationIcon(String? email) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('mentorEmail', isEqualTo: email?.toLowerCase())
+          .where('status', isEqualTo: 'pending')
+          .snapshots(),
+      builder: (context, snapshot) {
+        bool hasAlert = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
+        return Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+              ),
+            ),
+            if (hasAlert)
+              Positioned(
+                right: 12,
+                top: 12,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
