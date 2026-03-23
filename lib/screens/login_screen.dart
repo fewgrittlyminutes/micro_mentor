@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -12,15 +13,42 @@ class LoginScreen extends StatelessWidget {
         'prompt': 'select_account',
       });
 
-      await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
-      
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithPopup(microsoftProvider);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        String email = user.email!.toLowerCase().trim();
+
+        if (email.endsWith('@students.nsbm.ac.lk')) {
+          final userRef = FirebaseFirestore.instance.collection('authorized_users').doc(email);
+          final userDoc = await userRef.get();
+
+          if (!userDoc.exists) {
+            await userRef.set({
+              'name': user.displayName ?? email.split('@')[0],
+              'role': 'mentee',
+              'hasRequestedMentor': false,
+              'bio': 'NSBM Student',
+              'skills': [],
+              'price': 1000.0,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          }
+        } else {
+          await FirebaseAuth.instance.signOut();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Access Denied: Please use your NSBM Student Email.")),
+            );
+          }
+        }
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Login Error: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Login Error: $e"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 

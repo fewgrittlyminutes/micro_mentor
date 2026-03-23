@@ -116,17 +116,56 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
             ),
             
             if (canApply)
-              Padding(
-                padding: const EdgeInsets.only(top: 10, bottom: 10),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
-                    backgroundColor: const Color(0xFF006837),
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () => _submitMentorRequest(context, user?.email),
-                  child: const Text("Apply to become a Mentor"),
-                ),
+              FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('authorized_users')
+                    .doc(user?.email?.toLowerCase())
+                    .get(),
+                builder: (context, snapshot) {
+                  bool isPending = false;
+                  String? reason;
+                  
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    var userData = snapshot.data!.data() as Map<String, dynamic>;
+                    isPending = userData['hasRequestedMentor'] ?? false;
+                    reason = userData['rejectionReason'];
+                  }
+
+                  return Column(
+                    children: [
+                      if (!isPending && reason != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.red[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
+                            child: Text(
+                              reason,
+                              style: const TextStyle(color: Colors.red, fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10, bottom: 10),
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(double.infinity, 50),
+                            backgroundColor: isPending ? Colors.grey : const Color(0xFF006837),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: isPending ? null : () => _submitMentorRequest(context, user?.email),
+                          child: Text(isPending ? "Application Pending..." : "Apply to become a Mentor"),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
           ],
         ),
@@ -196,10 +235,28 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
                 ),
                 title: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      data['name'] ?? "Anonymous",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  children: [ 
+                    Expanded(
+                      child: Text(
+                        data['name'] ?? "Anonymous",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF006837).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "${data['price'] ?? 1000} LKR",
+                        style: const TextStyle(
+                          color: Color(0xFF006837),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                     _buildAverageRating(mentorEmail),
                   ],
@@ -369,22 +426,53 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
     );
   }
 
-  void _submitMentorRequest(BuildContext context, String? email) async {
-    try {
-      if (email == null) return;
-      await FirebaseFirestore.instance
-          .collection('authorized_users')
-          .doc(email.toLowerCase())
-          .update({'hasRequestedMentor': true});
+  void _submitMentorRequest(BuildContext context, String? email) {
+    if (email == null) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Application submitted!")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
-    }
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Apply to be a Mentor?"),
+        content: const Text(
+          "Your profile will be sent to the Admin for approval. "
+          "Once approved, you can set your own rates and mentor others."
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006837)),
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              try {
+                await FirebaseFirestore.instance
+                    .collection('authorized_users')
+                    .doc(email.toLowerCase())
+                    .update({
+                  'hasRequestedMentor': true,
+                  'rejectionReason': FieldValue.delete(),
+                });
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Application submitted!")),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text("Confirm", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildReviewsSection(String mentorEmail) {

@@ -37,13 +37,25 @@ class AdminApprovalScreen extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               String email = docs[index].id;
+              var userData = docs[index].data() as Map<String, dynamic>;
+              String name = userData['name'] ?? "No Name";
+
               return Card(
                 child: ListTile(
-                  title: Text(email),
-                  subtitle: const Text("Requesting Mentor Access"),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.check_circle, color: Colors.green),
-                    onPressed: () => _approveUser(email),
+                  title: Text(name),
+                  subtitle: Text(email),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.check_circle, color: Colors.green),
+                        onPressed: () => _approveUser(email),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.cancel, color: Colors.red),
+                        onPressed: () => _rejectUser(email),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -61,6 +73,16 @@ class AdminApprovalScreen extends StatelessWidget {
         .update({
       'role': 'mentor',
       'hasRequestedMentor': false,
+    });
+  }
+
+  void _rejectUser(String email) async {
+    await FirebaseFirestore.instance
+        .collection('authorized_users')
+        .doc(email.toLowerCase())
+        .update({
+      'hasRequestedMentor': false,
+      'rejectionReason': "Application declined. Please contact support to discuss your profile requirements.",
     });
   }
 }
