@@ -14,6 +14,7 @@ class MenteeDashboard extends StatefulWidget {
 
 class _MenteeDashboardState extends State<MenteeDashboard> {
   String _searchQuery = "";
+  String _sortOrder = "none";
   
   @override
   Widget build(BuildContext context) {
@@ -68,8 +69,13 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
                 fillColor: Colors.grey[100],
               ),
             ),
+
             const SizedBox(height: 20),
 
+            _buildSessionStatusSection(user?.email),
+            const SizedBox(height: 20),
+            const Text("Available Mentors", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -81,37 +87,57 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text("No mentors found."));
-                  }
-
                   var mentors = snapshot.data!.docs.where((doc) {
                     var data = doc.data() as Map<String, dynamic>;
-                    List skills = data['skills'] ?? [];
-                    String bio = (data['bio'] ?? "").toString().toLowerCase();
                     String name = (data['name'] ?? "").toString().toLowerCase();
-
-                    return _searchQuery.isEmpty || 
-                           name.contains(_searchQuery) ||
-                           bio.contains(_searchQuery) ||
-                           skills.any((s) => s.toString().toLowerCase().contains(_searchQuery));
+                    return _searchQuery.isEmpty || name.contains(_searchQuery);
                   }).toList();
 
-                  if (mentors.isEmpty) {
-                    return const Center(child: Text("No mentors match your search."));
+                  if (_sortOrder != "none") {
+                    mentors.sort((a, b) {
+                      double ratingA = (a.data() as Map<String, dynamic>)['avgRating']?.toDouble() ?? 0.0;
+                      double ratingB = (b.data() as Map<String, dynamic>)['avgRating']?.toDouble() ?? 0.0;
+                      return _sortOrder == "desc" ? ratingB.compareTo(ratingA) : ratingA.compareTo(ratingB);
+                    });
                   }
 
-                  return ListView.builder(
-                    itemCount: mentors.length,
-                    itemBuilder: (context, index) {
-                      var mentorDoc = mentors[index];
-                      var mentorData = mentorDoc.data() as Map<String, dynamic>;
-                      String mentorEmail = mentorDoc.id;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("Available Mentors", 
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            DropdownButton<String>(
+                              value: _sortOrder,
+                              icon: const Icon(Icons.sort, size: 20, color: Color(0xFF006837)),
+                              underline: const SizedBox(),
+                              items: const [
+                                DropdownMenuItem(value: "none", child: Text("Sort by")),
+                                DropdownMenuItem(value: "desc", child: Text("Highest Rated")),
+                                DropdownMenuItem(value: "asc", child: Text("Lowest Rated")),
+                              ],
+                              onChanged: (val) => setState(() => _sortOrder = val!),
+                            ),
+                          ],
+                        ),
+                      ),
                       
-                      return _buildMentorCard(mentorData, mentorEmail);
-                    },
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: mentors.length,
+                          itemBuilder: (context, index) {
+                            var mentorData = mentors[index].data() as Map<String, dynamic>;
+                            return _buildMentorCard(mentorData, mentors[index].id);
+                          },
+                        ),
+                      ),
+                    ],
                   );
-                },
+                }
               ),
             ),
             
@@ -178,7 +204,6 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
       stream: FirebaseFirestore.instance
           .collection('notifications')
           .where('menteeEmail', isEqualTo: email?.toLowerCase())
-          .where('status', whereIn: ['accepted', 'declined']) 
           .where('isRead', isEqualTo: false)
           .snapshots(),
       builder: (context, snapshot) {
@@ -197,12 +222,15 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
             ),
             if (hasUpdate)
               Positioned(
-                right: 12,
-                top: 12,
+                right: 8,
+                top: 8,
                 child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.red, 
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
           ],
@@ -243,21 +271,7 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF006837).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        "${data['price'] ?? 1000} LKR",
-                        style: const TextStyle(
-                          color: Color(0xFF006837),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+
                     _buildAverageRating(mentorEmail),
                   ],
                 ),
@@ -381,42 +395,24 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
                     backgroundColor: const Color(0xFF006837),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () async {
-                    try {
-                      final currentUser = FirebaseAuth.instance.currentUser;
-                      String studentEmail = currentUser?.email ?? "";
-                      String rawMessage = requestController.text.trim();
+                  onPressed: () {
+                    String rawMessage = requestController.text.trim();
 
-                      if (rawMessage.isEmpty) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Empty Request"),
-                            content: const Text("Please describe what you want to learn."),
-                            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))],
-                          ),
-                        );
-                        return;
-                      }
-
-                      await FirebaseFirestore.instance.collection('notifications').add({
-                        'mentorEmail': mentorEmail.toLowerCase().trim(),
-                        'menteeEmail': studentEmail.toLowerCase().trim(),
-                        'menteeName': currentUser?.displayName ?? "A Student",
-                        'status': 'pending',
-                        'menteeMessage': rawMessage,
-                        'timestamp': FieldValue.serverTimestamp(),
-                      });
-
-                      if (context.mounted) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Request sent!")));
-                      }
-                    } catch (e) {
-                      print("Error: $e");
+                    if (rawMessage.isEmpty) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Empty Request"),
+                          content: const Text("Please describe what you want to learn."),
+                          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))],
+                        ),
+                      );
+                      return;
                     }
+                    
+                    _sendRequest(mentorEmail, rawMessage);
                   },
-                  child: const Text("Request a Session", style: TextStyle(fontSize: 18, color: Colors.white)),
+                  child: const Text("Request Session", style: TextStyle(fontSize: 18, color: Colors.white)),
                 ),
               ),
             ],
@@ -428,47 +424,69 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
 
   void _submitMentorRequest(BuildContext context, String? email) {
     if (email == null) return;
+    
+    final bioController = TextEditingController();
+    final skillsController = TextEditingController();
+    final experienceController = TextEditingController();
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text("Apply to be a Mentor?"),
-        content: const Text(
-          "Your profile will be sent to the Admin for approval. "
-          "Once approved, you can set your own rates and mentor others."
+        title: const Text("Apply to be a Mentor"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Provide your details for Admin review:"),
+              const SizedBox(height: 15),
+              TextField(
+                controller: bioController,
+                decoration: const InputDecoration(labelText: "Bio (Who are you?)",
+                hintText: "e.g. Name, Student Year...",
+                border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: skillsController,
+                decoration: const InputDecoration(labelText: "Skills (comma seperated)",
+                hintText: "e.g. Java, SQL, UI/UX",
+                border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: experienceController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: "Experience (Projects or Years)", 
+                  hintText: "e.g. Github Repository, LinkedIn, Intership...",
+                  border: OutlineInputBorder()
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF006837)),
             onPressed: () async {
-              Navigator.pop(context);
-              
-              try {
-                await FirebaseFirestore.instance
-                    .collection('authorized_users')
-                    .doc(email.toLowerCase())
-                    .update({
-                  'hasRequestedMentor': true,
-                  'rejectionReason': FieldValue.delete(),
-                });
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Application submitted!")),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-                  );
-                }
+              if (bioController.text.isEmpty || skillsController.text.isEmpty) return;
+
+              await FirebaseFirestore.instance.collection('authorized_users').doc(email.toLowerCase()).update({
+                'hasRequestedMentor': true,
+                'pendingBio': bioController.text,
+                'pendingSkills': skillsController.text.split(',').map((e) => e.trim()).toList(),
+                'pendingExperience': experienceController.text, // NOW SENDING THIS
+                'applicationDate': FieldValue.serverTimestamp(),
+              });
+
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Application Submitted!")));
               }
             },
-            child: const Text("Confirm", style: TextStyle(color: Colors.white)),
+            child: const Text("Submit", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -572,4 +590,89 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
       },
     );
   }
+
+  void _sendRequest(String mentorEmail, String message) async {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'mentorEmail': mentorEmail.toLowerCase().trim(),
+      'menteeEmail': FirebaseAuth.instance.currentUser?.email?.toLowerCase().trim(),
+      'menteeName': FirebaseAuth.instance.currentUser?.displayName ?? "A Student",
+      'status': 'pending',
+      'menteeMessage': message,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+    });
+    if (mounted) Navigator.pop(context);
   }
+
+  Widget _buildSessionStatusSection(String? email) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('menteeEmail', isEqualTo: email?.toLowerCase().trim())
+          .where('status', whereIn: ['pending', 'accepted'])
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        var sessions = snapshot.data!.docs;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Your Current Sessions", 
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: sessions.length,
+                itemBuilder: (context, index) {
+                  var data = sessions[index].data() as Map<String, dynamic>;
+                  bool isAccepted = data['status'] == 'accepted';
+
+                  return Container(
+                    width: 200,
+                    margin: const EdgeInsets.only(right: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isAccepted ? Colors.green[50] : Colors.orange[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: isAccepted ? Colors.green : Colors.orange),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isAccepted ? "✅ Accepted" : "⏳ Pending",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            color: isAccepted ? Colors.green[700] : Colors.orange[800],
+                            fontSize: 12
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          data['menteeMessage'] ?? "Mentorship Session",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        if (isAccepted)
+                          const Text("Tap 'History' for Link", 
+                            style: TextStyle(fontSize: 10, color: Colors.grey)),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}

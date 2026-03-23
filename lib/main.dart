@@ -5,6 +5,8 @@ import 'firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_wrapper.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -21,7 +23,8 @@ class MicroMentorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MicroMentor 2.0',
+      navigatorKey: navigatorKey,
+      title: 'MicroMentor',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF006837)),

@@ -31,7 +31,7 @@ class HomeWrapper extends StatelessWidget {
                   const Text("Access Denied", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const Padding(
                     padding: EdgeInsets.all(20.0),
-                    child: Text("You are not on the authorized list for MM 2.0. Please contact the admin.", textAlign: TextAlign.center),
+                    child: Text("You are not on the authorized list for MM. Please contact the admin.", textAlign: TextAlign.center),
                   ),
                   ElevatedButton(
                     onPressed: () => FirebaseAuth.instance.signOut(),

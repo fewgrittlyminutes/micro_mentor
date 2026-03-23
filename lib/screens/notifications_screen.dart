@@ -140,11 +140,49 @@ class NotificationsScreen extends StatelessWidget {
     );
   }
 
-  void _updateStatus(String id, String status, {String? details}) {
-    FirebaseFirestore.instance.collection('notifications').doc(id).update({
-      'status': status,
-      'sessionDetails': details ?? "",
-      'isRead': false,
-    });
+  void _updateStatus(String id, String status, {String? details}) async {
+    final docRef = FirebaseFirestore.instance.collection('notifications').doc(id);
+    
+    if (status == 'declined') {
+      try {
+        DocumentSnapshot doc = await docRef.get();
+        var data = doc.data() as Map<String, dynamic>;
+        
+        String mentorEmail = data['mentorEmail'];
+        double amount = (data['amount'] ?? 1000).toDouble();
+        String? sessionId = data['sessionId'];
+
+        WriteBatch batch = FirebaseFirestore.instance.batch();
+
+        batch.update(docRef, {
+          'status': 'declined',
+          'isRead': false,
+        });
+
+        if (sessionId != null && sessionId.isNotEmpty) {
+          batch.update(FirebaseFirestore.instance.collection('sessions').doc(sessionId), {
+            'status': 'refunded',
+            'isRead': false,
+          });
+        }
+
+        batch.update(
+          FirebaseFirestore.instance.collection('authorized_users').doc(mentorEmail.toLowerCase().trim()), 
+          {
+            'revenue': FieldValue.increment(-amount),
+          }
+        );
+
+        await batch.commit();
+      } catch (e) {
+        print("Refund error: $e");
+      }
+    } else {
+      docRef.update({
+        'status': status,
+        'sessionDetails': details ?? "",
+        'isRead': false,
+      });
+    }
   }
 }

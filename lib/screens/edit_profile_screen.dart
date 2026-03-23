@@ -16,7 +16,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
   final _skillsController = TextEditingController();
-  final _priceController = TextEditingController();
   bool _isLoading = true;
 
   @override
@@ -38,7 +37,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _nameController.text = data['name'] ?? user?.displayName ?? '';
         _bioController.text = data['bio'] ?? '';
         _skillsController.text = (data['skills'] as List<dynamic>?)?.join(', ') ?? '';
-        _priceController.text = (data['price'] ?? '1000').toString();
         _isLoading = false;
       });
     }
@@ -53,7 +51,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (widget.role == 'mentor') {
       updateData['skills'] = _skillsController.text.split(',').map((e) => e.trim()).toList();
-      updateData['price'] = double.tryParse(_priceController.text) ?? 1000.0;
     }
 
     await FirebaseFirestore.instance
@@ -94,15 +91,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     decoration: const InputDecoration(labelText: "Skills (comma separated)", border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 15),
-                  TextField(
-                    controller: _priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "Session Rate (LKR)", 
-                      prefixIcon: Icon(Icons.payments_outlined),
-                      border: OutlineInputBorder()
-                    ),
-                  ),
                 ],
                 const SizedBox(height: 40), 
 
@@ -141,7 +129,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       scheme: 'mailto',
       path: 'hhdkweerasinghe@students.nsbm.ac.lk',
       queryParameters: {
-        'subject': 'Support Request - MicroMentor 2.0',
+        'subject': 'Support Request - MicroMentor',
       },
     );
 

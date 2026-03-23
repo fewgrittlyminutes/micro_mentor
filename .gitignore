@@ -47,3 +47,4 @@ app.*.map.json
 # Firebase & Secret Configs
 android/app/google-services.json
 lib/firebase_options.dart
+lib/ai_service.dart

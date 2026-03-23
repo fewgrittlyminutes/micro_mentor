@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'ai_service.dart';
 
 class MyRequestsScreen extends StatefulWidget {
   const MyRequestsScreen({super.key});
@@ -20,19 +21,13 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    _markAllAsRead(user?.email);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Sent Requests"),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF006837),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text("My Sent Requests")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('notifications')
             .where('menteeEmail', isEqualTo: user?.email?.toLowerCase())
+            //.orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
@@ -60,11 +55,13 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                   subtitle: Text("Status: ${status.toUpperCase()}", 
                     style: TextStyle(color: _getStatusColor(status), fontWeight: FontWeight.bold)),
                   
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.grey),
-                    onPressed: () => _showDeleteConfirmation(context, docId, status),
-                  ),
-                  
+                  trailing: (status == 'pending' || status == 'declined') 
+                    ? IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                        onPressed: () => _showDeleteConfirmation(context, docId, status, data),
+                      )
+                    : const SizedBox.shrink(),
+
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -99,6 +96,21 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                               ),
                             ),
                           ] else if (status == 'accepted') ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: ElevatedButton.icon(
+                                onPressed: () => _showAIRoadmap(context, data['menteeMessage'] ?? "this topic"),
+                                icon: const Icon(Icons.auto_awesome, size: 18),
+                                label: const Text("Generate AI Study Roadmap"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.purple[700],
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
+                            const Divider(),
                             const Text("Mentor's Instructions:", style: TextStyle(fontWeight: FontWeight.bold)),
                             const SizedBox(height: 5),
                             Text(data['sessionDetails'] ?? "Check back soon for details!"),
@@ -126,14 +138,14 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
     return Colors.orange;
   }
 
-  void _showDeleteConfirmation(BuildContext context, String docId, String status) {
+  void _showDeleteConfirmation(BuildContext context, String docId, String status, Map<String, dynamic> data) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(status == 'pending' ? "Withdraw Request?" : "Delete Record?"),
         content: Text(status == 'pending' 
             ? "Are you sure you want to cancel this request?" 
-            : "This will remove the request from your history."),
+            : "This will remove the record from your history."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -141,8 +153,18 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
           ),
           TextButton(
             onPressed: () async {
-              await FirebaseFirestore.instance.collection('notifications').doc(docId).delete();
-              if (context.mounted) Navigator.pop(context);
+              Navigator.pop(context);
+              
+              await FirebaseFirestore.instance
+                  .collection('notifications')
+                  .doc(docId)
+                  .delete();
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Request removed."))
+                );
+              }
             },
             child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
@@ -179,7 +201,7 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
               TextField(
                 controller: reviewController,
                 decoration: const InputDecoration(
-                  hintText: "Write a short thank you note...",
+                  hintText: "Write a review...",
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 2,
@@ -201,6 +223,8 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
                 await FirebaseFirestore.instance.collection('notifications').doc(docId).update({
                   'isReviewed': true,
                 });
+
+                await _updateMentorAverage(mentorEmail); 
 
                 if (context.mounted) {
                   Navigator.pop(context);
@@ -231,5 +255,63 @@ class _MyRequestsScreenState extends State<MyRequestsScreen> {
       batch.update(doc.reference, {'isRead': true});
     }
     await batch.commit();
+  }
+
+  void _showAIRoadmap(BuildContext context, String topic) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: Colors.purple),
+      ),
+    );
+
+    String roadmap = await AIService.generateRoadmap(topic);
+
+    if (context.mounted) {
+      Navigator.pop(context);
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Colors.purple),
+              SizedBox(width: 10),
+              Text("AI Study Roadmap"),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Text(roadmap, style: const TextStyle(fontSize: 14, height: 1.5)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Got it!"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _updateMentorAverage(String mentorEmail) async {
+    var reviewsQuery = await FirebaseFirestore.instance
+        .collection('reviews')
+        .where('mentorEmail', isEqualTo: mentorEmail.toLowerCase().trim())
+        .get();
+
+    if (reviewsQuery.docs.isNotEmpty) {
+      double total = 0;
+      for (var doc in reviewsQuery.docs) {
+        total += (doc['rating'] ?? 0);
+      }
+      double average = total / reviewsQuery.docs.length;
+
+      await FirebaseFirestore.instance
+          .collection('authorized_users')
+          .doc(mentorEmail.toLowerCase().trim())
+          .update({'avgRating': average});
+    }
   }
 }

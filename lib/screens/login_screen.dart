@@ -30,7 +30,6 @@ class LoginScreen extends StatelessWidget {
               'hasRequestedMentor': false,
               'bio': 'NSBM Student',
               'skills': [],
-              'price': 1000.0,
               'createdAt': FieldValue.serverTimestamp(),
             });
           }
@@ -65,7 +64,7 @@ class LoginScreen extends StatelessWidget {
               const Icon(Icons.account_balance, size: 100, color: Color(0xFF006837)),
               const SizedBox(height: 20),
               const Text(
-                "MicroMentor 2.0",
+                "MicroMentor",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
