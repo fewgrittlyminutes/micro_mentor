@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+<<<<<<< HEAD
+=======
+import 'edit_profile_screen.dart';
+>>>>>>> 9facca9 (Ishini - Profile & Auth Actions)
 
 class MenteeDashboard extends StatelessWidget {
   final String role; 
@@ -18,6 +22,18 @@ class MenteeDashboard extends StatelessWidget {
         title: const Text("Student Portal"),
         actions: [
           IconButton(
+<<<<<<< HEAD
+=======
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => EditProfileScreen(role: role)),
+              );
+            },
+          ),
+          IconButton(
+>>>>>>> 9facca9 (Ishini - Profile & Auth Actions)
             onPressed: () => FirebaseAuth.instance.signOut(),
             icon: const Icon(Icons.logout),
           )

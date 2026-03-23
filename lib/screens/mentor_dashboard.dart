@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
+=======
+import 'package:firebase_auth/firebase_auth.dart';
+import 'edit_profile_screen.dart';
+>>>>>>> 9facca9 (Ishini - Profile & Auth Actions)
 
 class MentorDashboard extends StatelessWidget {
   const MentorDashboard({super.key});
@@ -11,6 +16,26 @@ class MentorDashboard extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF006837),
         elevation: 0,
+<<<<<<< HEAD
+=======
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileScreen(role: 'mentor'),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            onPressed: () => FirebaseAuth.instance.signOut(),
+            icon: const Icon(Icons.logout),
+          )
+        ],
+>>>>>>> 9facca9 (Ishini - Profile & Auth Actions)
       ),
       body: const Center(
         child: Column(
