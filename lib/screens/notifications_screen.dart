@@ -78,13 +78,17 @@ class NotificationsScreen extends StatelessWidget {
                           ),
                         ],
                       )
-                    : Text(
-                        status.toUpperCase(), 
-                        style: TextStyle(
-                          color: status == 'accepted' ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    : status == 'accepted'
+                        ? ElevatedButton.icon(
+                            onPressed: () => _updateStatus(docId, 'completed'),
+                            icon: const Icon(Icons.done_all, size: 16),
+                            label: const Text("Done"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF006837),
+                              foregroundColor: Colors.white,
+                            ),
+                          )
+                        : Text(status.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               );
             },
@@ -140,6 +144,7 @@ class NotificationsScreen extends StatelessWidget {
     FirebaseFirestore.instance.collection('notifications').doc(id).update({
       'status': status,
       'sessionDetails': details ?? "",
+      'isRead': false,
     });
   }
 }

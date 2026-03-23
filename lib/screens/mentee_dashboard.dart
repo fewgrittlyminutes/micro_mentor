@@ -140,6 +140,7 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
           .collection('notifications')
           .where('menteeEmail', isEqualTo: email?.toLowerCase())
           .where('status', whereIn: ['accepted', 'declined']) 
+          .where('isRead', isEqualTo: false)
           .snapshots(),
       builder: (context, snapshot) {
         bool hasUpdate = snapshot.hasData && snapshot.data!.docs.isNotEmpty;
@@ -148,7 +149,6 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
           children: [
             IconButton(
               icon: const Icon(Icons.history),
-              tooltip: "My Requests",
               onPressed: () {
                 Navigator.push(
                   context,
@@ -158,15 +158,12 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
             ),
             if (hasUpdate)
               Positioned(
-                right: 8,
-                top: 8,
+                right: 12,
+                top: 12,
                 child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: Colors.red, 
-                    shape: BoxShape.circle,
-                  ),
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                 ),
               ),
           ],
@@ -197,9 +194,15 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
                   backgroundColor: Color(0xFF006837),
                   child: Icon(Icons.person, color: Colors.white),
                 ),
-                title: Text(
-                  data['name'] ?? "Anonymous",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      data['name'] ?? "Anonymous",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    _buildAverageRating(mentorEmail),
+                  ],
                 ),
                 subtitle: Text(
                   data['bio'] ?? "No bio available",
@@ -237,144 +240,127 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
       ),
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(24),
-          height: MediaQuery.of(context).size.height * 0.7, 
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+          height: MediaQuery.of(context).size.height * 0.85, 
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 25),
-              
-              Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 35,
-                    backgroundColor: Color(0xFF006837),
-                    child: Icon(Icons.person, size: 40, color: Colors.white),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data['name'] ?? "Anonymous",
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                        ),
-                        const Text(
-                          "Verified Mentor",
-                          style: TextStyle(color: Color(0xFF006837), fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 25),
-              
-              const Text("About Me", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Text(
-                data['bio'] ?? "This mentor hasn't provided a bio yet.",
-                style: const TextStyle(fontSize: 16, height: 1.4),
-              ),
-              
-              const SizedBox(height: 25),
-              const Text("Expertise", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: skills.map((skill) => Chip(
-                  label: Text(skill.toString()),
-                  backgroundColor: const Color(0xFF006837).withOpacity(0.1),
-                  side: const BorderSide(color: Color(0xFF006837)),
-                )).toList(),
-              ),
-
-              const Text("What do you want to learn?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              TextField(
-                controller: requestController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  hintText: "e.g., I need help with Java Spring Boot...",
-                  border: OutlineInputBorder(),
-                ),
+              Container(
+                width: 40, height: 5,
+                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
               ),
               const SizedBox(height: 20),
 
-              const Spacer(),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 55),
-                  backgroundColor: const Color(0xFF006837),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () async {
-                  try {
-                    final currentUser = FirebaseAuth.instance.currentUser;
-                    String studentEmail = currentUser?.email ?? "";
-                    String rawMessage = requestController.text.trim();
-
-                    if (rawMessage.isEmpty) {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text("Empty Request"),
-                          content: const Text("Please describe what you want to learn so the mentor can help you better."),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text("OK", style: TextStyle(color: Color(0xFF006837))),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const CircleAvatar(
+                            radius: 35,
+                            backgroundColor: Color(0xFF006837),
+                            child: Icon(Icons.person, size: 40, color: Colors.white),
+                          ),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(data['name'] ?? "Anonymous",
+                                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                                const Text("Verified Mentor",
+                                    style: TextStyle(color: Color(0xFF006837), fontWeight: FontWeight.bold)),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                      return;
-                    }
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 25),
+                      
+                      const Text("About Me", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Text(data['bio'] ?? "No bio provided.", style: const TextStyle(fontSize: 16, height: 1.4)),
+                      
+                      const SizedBox(height: 25),
+                      const Text("Expertise", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: skills.map((skill) => Chip(
+                          label: Text(skill.toString()),
+                          backgroundColor: const Color(0xFF006837).withOpacity(0.1),
+                          side: const BorderSide(color: Color(0xFF006837)),
+                        )).toList(),
+                      ),
 
-                    if (!studentEmail.endsWith('@students.nsbm.ac.lk')) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Please use your NSBM student email")),
-                      );
-                      return;
-                    }
+                      const SizedBox(height: 25),
+                      const Text("Reviews & Ratings", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      
+                      _buildReviewsSection(mentorEmail),
 
-                    await FirebaseFirestore.instance.collection('notifications').add({
-                      'mentorEmail': mentorEmail.toLowerCase().trim(),
-                      'menteeEmail': studentEmail.toLowerCase().trim(),
-                      'menteeName': currentUser?.displayName ?? "A Student",
-                      'status': 'pending',
-                      'menteeMessage': rawMessage,
-                      'timestamp': FieldValue.serverTimestamp(),
-                    });
+                      const SizedBox(height: 25),
+                      const Text("What do you want to learn?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      
+                      TextField(
+                        controller: requestController,
+                        maxLines: 2,
+                        decoration: const InputDecoration(hintText: "e.g., I need help with Java...", border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
 
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Request sent!")),
-                      );
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 55),
+                    backgroundColor: const Color(0xFF006837),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    try {
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      String studentEmail = currentUser?.email ?? "";
+                      String rawMessage = requestController.text.trim();
+
+                      if (rawMessage.isEmpty) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("Empty Request"),
+                            content: const Text("Please describe what you want to learn."),
+                            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))],
+                          ),
+                        );
+                        return;
+                      }
+
+                      await FirebaseFirestore.instance.collection('notifications').add({
+                        'mentorEmail': mentorEmail.toLowerCase().trim(),
+                        'menteeEmail': studentEmail.toLowerCase().trim(),
+                        'menteeName': currentUser?.displayName ?? "A Student",
+                        'status': 'pending',
+                        'menteeMessage': rawMessage,
+                        'timestamp': FieldValue.serverTimestamp(),
+                      });
+
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Request sent!")));
+                      }
+                    } catch (e) {
+                      print("Error: $e");
                     }
-                  } catch (e) {
-                    print("Request Error: $e");
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-                      );
-                    }
-                  }
-                },
-                child: const Text("Request a Session", style: TextStyle(fontSize: 18, color: Colors.white)),
+                  },
+                  child: const Text("Request a Session", style: TextStyle(fontSize: 18, color: Colors.white)),
+                ),
               ),
             ],
           ),
@@ -400,4 +386,102 @@ class _MenteeDashboardState extends State<MenteeDashboard> {
       );
     }
   }
-}
+
+  Widget _buildReviewsSection(String mentorEmail) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('reviews')
+          .where('mentorEmail', isEqualTo: mentorEmail.toLowerCase().trim())
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          return const LinearProgressIndicator();
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Text(
+            "No reviews yet. Be the first to learn from this mentor!",
+            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+          );
+        }
+
+        var reviews = snapshot.data!.docs;
+
+        return SizedBox(
+          height: 150,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: reviews.length,
+            itemBuilder: (context, index) {
+              var r = reviews[index].data() as Map<String, dynamic>;
+              int starCount = (r['rating'] ?? 0).toInt();
+              return Container(
+                width: 220,
+                margin: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: List.generate(5, (i) => Icon(
+                        Icons.star,
+                        size: 14,
+                        color: i < starCount ? Colors.amber : Colors.grey[300],
+                      )),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: Text(
+                        r['reviewText'] ?? "No comment provided.",
+                        style: const TextStyle(fontSize: 13),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAverageRating(String mentorEmail) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('reviews')
+          .where('mentorEmail', isEqualTo: mentorEmail.toLowerCase().trim())
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Text("No ratings yet", style: TextStyle(fontSize: 12, color: Colors.grey));
+        }
+
+        var reviews = snapshot.data!.docs;
+        double sum = 0;
+        for (var doc in reviews) {
+          sum += (doc['rating'] ?? 0);
+        }
+        double average = sum / reviews.length;
+
+        return Row(
+          children: [
+            const Icon(Icons.star, color: Colors.amber, size: 16),
+            const SizedBox(width: 4),
+            Text(
+              "${average.toStringAsFixed(1)} (${reviews.length})",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF006837)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  }
