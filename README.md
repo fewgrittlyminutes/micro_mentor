@@ -1,18 +1,12 @@
-# mm_v2
+# MicroMentor
 
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-"# Technical Issues" 
+## Github username - Student ID
+fewgrittlyminutes - 10967222
+interval456 - 10967220
+ishiniiiii - 10967125
+kavindya23 - 10967048
+Methul25 - 10967166
+Ratchet3064 - 10967307
+rovinnnnn - 10967131
+sadiranethmal - 10967221
+senuja1 - 10967142
